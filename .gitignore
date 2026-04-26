@@ -1,3 +1,4 @@
 __pycache__/
 *.py[cod]
+baseline_*.json
 candidate_*.json

@@ -98,3 +98,35 @@
   - solve time increased somewhat, but remained comfortably runnable
 - Remaining idea:
   - test a slightly smarter adaptive lookahead instead of a fixed larger lookahead
+
+## 2026-04-26 05:52
+
+- Tested several parameter-only follow-ups on top of the current best solver:
+  - wider batch candidate pool
+  - deeper rebalance search
+  - `driver_lookahead=5`
+- None of the tested variants beat the current best result, and most increased runtime or worsened both makespan and total distance.
+- Kept the existing best configuration unchanged.
+- Best result remains:
+  - delivered orders: `10000`
+  - makespan: `3240.7073`
+  - total distance: `319408.9718`
+- Remaining idea:
+  - try adaptive lookahead or adaptive candidate-pool sizing instead of globally increasing them
+
+## 2026-04-26 06:35
+
+- Added a lightweight unsupervised learning step using K-means over
+  `(PickupX, PickupY, DeliveryX, DeliveryY)` to form order micro-clusters.
+- Integrated the cluster labels into batch construction so same-cluster orders
+  are surfaced earlier before the exact marginal-cost evaluation stage.
+- This gave the solver a data-driven neighborhood prior while keeping the
+  exact feasibility checks and rebalance logic unchanged.
+- Updated the README to document the clustering add-on.
+- Improved result versus the previous best:
+  - delivered orders: `10000`
+  - makespan: `3114.8987`
+  - total distance: `306801.2000`
+- Remaining idea:
+  - test adaptive cluster usage so the solver relies on cluster priors more in
+    the middle game and less near the end

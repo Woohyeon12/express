@@ -51,3 +51,14 @@ python main.py --orders "C:\Users\서우현\Desktop\tilda\orders.csv" --delivers
 
 - `P:OrderID`: 주문 픽업
 - `D:OrderID`: 주문 배송
+
+## Unsupervised Learning Add-on
+
+The solver now includes a lightweight K-means clustering step over
+`(PickupX, PickupY, DeliveryX, DeliveryY)` to build order micro-clusters.
+During batch expansion, feasible orders from the same cluster as the seed
+order are surfaced before the exact marginal-cost evaluation step.
+
+This keeps the optimization pipeline heuristic and constraint-aware, but adds
+a data-driven neighborhood prior that improved both makespan and total
+distance on the provided dataset.

@@ -4,6 +4,7 @@ import csv
 import heapq
 import itertools
 import math
+import random
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Callable
@@ -93,6 +94,18 @@ def euclidean(a: tuple[int, int], b: tuple[int, int]) -> float:
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
 
+def squared_feature_distance(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> float:
+    return (
+        (a[0] - b[0]) ** 2
+        + (a[1] - b[1]) ** 2
+        + (a[2] - b[2]) ** 2
+        + (a[3] - b[3]) ** 2
+    )
+
+
 def load_orders(path: str) -> list[Order]:
     with open(path, "r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -131,6 +144,10 @@ class DeliveryOptimizer:
         self.remaining_orders = len(orders)
         self.pickup_grid: dict[tuple[int, int], list[int]] = defaultdict(list)
         self.batch_plan_cache: dict[tuple[int, int, int, tuple[int, ...]], BatchPlan] = {}
+        (
+            self.order_cluster_ids,
+            self.cluster_members,
+        ) = self._build_order_clusters()
         for index, order in enumerate(orders):
             self.pickup_grid[order.pickup].append(index)
 
@@ -215,8 +232,22 @@ class DeliveryOptimizer:
             capacity=state.capacity,
             target=72,
         )
+        clustered_candidates = self._collect_cluster_candidates(
+            seed_index=seed_index,
+            capacity=state.capacity,
+            limit=24,
+        )
+        preferred_cluster_candidates = set(clustered_candidates)
+        merged_candidates: list[int] = []
+        seen_candidates: set[int] = set()
+        for candidate_index in clustered_candidates + extra_candidates:
+            if candidate_index in seen_candidates:
+                continue
+            merged_candidates.append(candidate_index)
+            seen_candidates.add(candidate_index)
+
         scored_candidates: list[tuple[float, int]] = []
-        for candidate_index in extra_candidates:
+        for candidate_index in merged_candidates:
             if candidate_index == seed_index or not self.unassigned[candidate_index]:
                 continue
             candidate = self.orders[candidate_index]
@@ -225,10 +256,13 @@ class DeliveryOptimizer:
 
             pickup_gap = euclidean(seed_order.pickup, candidate.pickup)
             delivery_gap = euclidean(seed_order.delivery, candidate.delivery)
-            if pickup_gap > 20.0 and delivery_gap > 28.0:
+            in_seed_cluster = candidate_index in preferred_cluster_candidates
+            if not in_seed_cluster and pickup_gap > 20.0 and delivery_gap > 28.0:
                 continue
 
             score = 0.6 * pickup_gap + 0.4 * delivery_gap - 0.25 * candidate.size
+            if in_seed_cluster:
+                score -= 5.0
             scored_candidates.append((score, candidate_index))
 
         scored_candidates.sort(key=lambda item: (item[0], self.orders[item[1]].order_id))
@@ -514,6 +548,120 @@ class DeliveryOptimizer:
         for subset_size in range(1, total_orders):
             for subset in itertools.combinations(order_indices, subset_size):
                 yield subset
+
+    def _build_order_clusters(self) -> tuple[list[int], list[list[int]]]:
+        order_count = len(self.orders)
+        if order_count == 0:
+            return ([], [])
+
+        cluster_count = min(max(len(self.drivers) + len(self.drivers) // 2, 80), order_count)
+        features = [
+            (
+                float(order.pickup_x),
+                float(order.pickup_y),
+                float(order.delivery_x),
+                float(order.delivery_y),
+            )
+            for order in self.orders
+        ]
+
+        rng = random.Random(42)
+        first_index = rng.randrange(order_count)
+        centers = [features[first_index]]
+        min_distances = [squared_feature_distance(point, centers[0]) for point in features]
+
+        while len(centers) < cluster_count:
+            total_distance = sum(min_distances)
+            if total_distance <= 0.0:
+                centers.append(features[rng.randrange(order_count)])
+                continue
+
+            threshold = rng.random() * total_distance
+            cumulative = 0.0
+            chosen_index = order_count - 1
+            for index, distance in enumerate(min_distances):
+                cumulative += distance
+                if cumulative >= threshold:
+                    chosen_index = index
+                    break
+
+            centers.append(features[chosen_index])
+            new_center = centers[-1]
+            for index, point in enumerate(features):
+                candidate_distance = squared_feature_distance(point, new_center)
+                if candidate_distance < min_distances[index]:
+                    min_distances[index] = candidate_distance
+
+        labels = [0] * order_count
+        for _ in range(8):
+            changed = False
+            sums = [[0.0, 0.0, 0.0, 0.0, 0] for _ in range(cluster_count)]
+
+            for index, point in enumerate(features):
+                best_cluster = min(
+                    range(cluster_count),
+                    key=lambda cluster_id: squared_feature_distance(point, centers[cluster_id]),
+                )
+                if labels[index] != best_cluster:
+                    labels[index] = best_cluster
+                    changed = True
+
+                slot = sums[best_cluster]
+                slot[0] += point[0]
+                slot[1] += point[1]
+                slot[2] += point[2]
+                slot[3] += point[3]
+                slot[4] += 1
+
+            new_centers: list[tuple[float, float, float, float]] = []
+            for cluster_id, slot in enumerate(sums):
+                if slot[4] == 0:
+                    new_centers.append(features[rng.randrange(order_count)])
+                    continue
+                count = slot[4]
+                new_centers.append(
+                    (
+                        slot[0] / count,
+                        slot[1] / count,
+                        slot[2] / count,
+                        slot[3] / count,
+                    )
+                )
+
+            centers = new_centers
+            if not changed:
+                break
+
+        members = [[] for _ in range(cluster_count)]
+        for index, label in enumerate(labels):
+            members[label].append(index)
+
+        return (labels, members)
+
+    def _collect_cluster_candidates(
+        self,
+        seed_index: int,
+        capacity: int,
+        limit: int,
+    ) -> list[int]:
+        seed_cluster = self.order_cluster_ids[seed_index]
+        seed_order = self.orders[seed_index]
+        scored: list[tuple[float, int]] = []
+
+        for candidate_index in self.cluster_members[seed_cluster]:
+            if candidate_index == seed_index or not self.unassigned[candidate_index]:
+                continue
+            candidate = self.orders[candidate_index]
+            if candidate.size > capacity:
+                continue
+
+            pickup_gap = euclidean(seed_order.pickup, candidate.pickup)
+            delivery_gap = euclidean(seed_order.delivery, candidate.delivery)
+            score = 0.55 * pickup_gap + 0.45 * delivery_gap - 0.2 * candidate.size
+            scored.append((score, candidate_index))
+
+        scored.sort(key=lambda item: (item[0], self.orders[item[1]].order_id))
+        return [candidate_index for _, candidate_index in scored[:limit]]
 
     def _solve_batch_route_exact(
         self,
