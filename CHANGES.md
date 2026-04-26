@@ -130,3 +130,17 @@
 - Remaining idea:
   - test adaptive cluster usage so the solver relies on cluster priors more in
     the middle game and less near the end
+
+## 2026-04-26 14:40
+
+- Added `visualize_data.py` to generate a self-contained HTML data report for
+  order and driver distributions.
+- The report includes:
+  - order size distribution
+  - driver capacity distribution
+  - trip distance distribution
+  - pickup remoteness from the nearest driver start
+  - spatial scatter plot for pickups, deliveries, and driver starts
+  - outlier table exported to CSV
+- Generated `analysis/data_report.html`, `analysis/order_outliers.csv`, and
+  `analysis/data_summary.json` for the current dataset.

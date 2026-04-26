@@ -62,3 +62,17 @@ order are surfaced before the exact marginal-cost evaluation step.
 This keeps the optimization pipeline heuristic and constraint-aware, but adds
 a data-driven neighborhood prior that improved both makespan and total
 distance on the provided dataset.
+
+## Visualization Report
+
+Use the following command to generate a lightweight exploratory data report:
+
+```bash
+python visualize_data.py --orders orders.csv --delivers delivers.csv --output-dir analysis
+```
+
+Generated files:
+
+- `analysis/data_report.html`: self-contained visual report with distributions and spatial plots
+- `analysis/order_outliers.csv`: outlier table based on trip distance and pickup remoteness
+- `analysis/data_summary.json`: summary statistics and outlier thresholds

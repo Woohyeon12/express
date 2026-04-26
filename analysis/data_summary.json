@@ -1,0 +1,12 @@
+{
+  "order_count": 10000,
+  "driver_count": 100,
+  "trip_distance_mean": 52.426907297050214,
+  "trip_distance_p95": 94.36630754670864,
+  "trip_distance_outlier_threshold": 128.7355351705338,
+  "pickup_distance_mean": 5.0687414173516885,
+  "pickup_distance_p95": 10.0,
+  "pickup_distance_outlier_threshold": 11.507810593582121,
+  "trip_outlier_count": 1,
+  "pickup_outlier_count": 324
+}
