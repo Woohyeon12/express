@@ -2,3 +2,8 @@ __pycache__/
 *.py[cod]
 baseline_*.json
 candidate_*.json
+elbow_*.json
+reload_*.json
+verification_*.json
+tuning/
+experiments/*_submission.json

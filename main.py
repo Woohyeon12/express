@@ -4,30 +4,41 @@ import argparse
 import json
 from pathlib import Path
 
-from solver import evaluate_schedule, load_drivers, load_orders, optimize_schedule
+from solver import (
+    SolverParams,
+    evaluate_schedule,
+    load_drivers,
+    load_orders,
+    optimize_schedule,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Tilda Express 도시 배송 최적화 휴리스틱 솔버",
+        description="Tilda Express delivery optimization heuristic",
     )
-    parser.add_argument("--orders", required=True, help="orders.csv 경로")
+    parser.add_argument("--orders", required=True, help="path to orders.csv")
     parser.add_argument(
         "--delivers",
         "--drivers",
         dest="delivers",
         required=True,
-        help="delivers.csv 경로",
+        help="path to delivers.csv",
     )
     parser.add_argument(
         "--output",
         default="submission.json",
-        help="결과 JSON 저장 경로",
+        help="output submission JSON path",
     )
     parser.add_argument(
         "--metrics",
         default=None,
-        help="검증 지표 저장 경로",
+        help="optional metrics JSON path",
+    )
+    parser.add_argument(
+        "--params",
+        default=None,
+        help="optional solver parameter JSON path",
     )
     return parser
 
@@ -37,7 +48,12 @@ def main() -> None:
 
     orders = load_orders(args.orders)
     drivers = load_drivers(args.delivers)
-    schedule = optimize_schedule(orders=orders, drivers=drivers)
+    params = None
+    if args.params:
+        with Path(args.params).open("r", encoding="utf-8") as handle:
+            params = SolverParams.from_dict(json.load(handle))
+
+    schedule = optimize_schedule(orders=orders, drivers=drivers, params=params)
     evaluation = evaluate_schedule(orders=orders, drivers=drivers, schedule=schedule)
 
     output_path = Path(args.output)
@@ -63,6 +79,8 @@ def main() -> None:
     print(f"Delivered orders: {evaluation.delivered_orders}")
     print(f"Makespan: {evaluation.makespan:.4f}")
     print(f"Total distance: {evaluation.total_distance:.4f}")
+    if args.params:
+        print(f"Params loaded from: {Path(args.params).resolve()}")
     print(f"Submission saved to: {output_path.resolve()}")
 
 

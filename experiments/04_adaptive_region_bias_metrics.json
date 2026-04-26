@@ -1,0 +1,7 @@
+{
+  "orders": 10000,
+  "drivers": 100,
+  "makespan": 3101.9619973877093,
+  "total_distance": 305372.34999815066,
+  "delivered_orders": 10000
+}

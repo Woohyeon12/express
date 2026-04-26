@@ -1,0 +1,7 @@
+{
+  "enable_bottleneck_lns": true,
+  "lns_rounds": 4,
+  "lns_source_pool": 3,
+  "lns_target_pool": 8,
+  "lns_window_depth": 2
+}

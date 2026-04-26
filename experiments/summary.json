@@ -1,0 +1,62 @@
+{
+  "baseline": {
+    "makespan": 3094.72142321468,
+    "total_distance": 305390.2033089873,
+    "selected": false
+  },
+  "experiments": [
+    {
+      "name": "01_bottleneck_lns",
+      "description": "Bottleneck-focused LNS on overloaded driver tails",
+      "makespan": 3094.72142321468,
+      "total_distance": 305390.2033089873,
+      "delta_makespan": 0.0,
+      "selected": false
+    },
+    {
+      "name": "02_window_rebalance",
+      "description": "Two-batch tail rebalance window",
+      "makespan": 3104.3940963615784,
+      "total_distance": 305743.11776440946,
+      "delta_makespan": 9.672673146898312,
+      "selected": false
+    },
+    {
+      "name": "03_multi_start",
+      "description": "Three-start diversified initialization and pick-best",
+      "makespan": 3082.3380176818596,
+      "total_distance": 303298.5877209251,
+      "delta_makespan": -12.383405532820344,
+      "selected": true
+    },
+    {
+      "name": "04_adaptive_region_bias",
+      "description": "Adaptive region-cluster bonus",
+      "makespan": 3101.9619673490044,
+      "total_distance": 305372.34999553737,
+      "delta_makespan": 7.240544134324556,
+      "selected": false
+    },
+    {
+      "name": "05_second_reload",
+      "description": "Allow a second constrained mid-route reload",
+      "makespan": 3096.729798873675,
+      "total_distance": 304643.66778532747,
+      "delta_makespan": 2.008375658995014,
+      "selected": false
+    },
+    {
+      "name": "06_multi_start_second_reload",
+      "description": "Combine three-start diversification with a second constrained reload",
+      "makespan": 3080.5355885737944,
+      "total_distance": 303400.29442280566,
+      "delta_makespan": -14.185834640885272,
+      "selected": true
+    }
+  ],
+  "selected_combination": {
+    "params_file": "best_params.json",
+    "makespan": 3080.5355885737944,
+    "total_distance": 303400.29442280566
+  }
+}
